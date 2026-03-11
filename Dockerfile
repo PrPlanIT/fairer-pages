@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM docker.io/library/alpine:3.23
+FROM docker.io/library/alpine:3.23.3
 
 RUN apk add --no-cache nginx python3 py3-yaml gettext && \
     # Create non-root user
