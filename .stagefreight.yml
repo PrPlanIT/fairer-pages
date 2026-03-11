@@ -348,6 +348,19 @@ lint:
     - "src/themes/*/resources/*.webp"
     - "docs/screenshots/**/*.png"
     - "docs/screenshots/banner.png"
+  modules:
+    unicode:
+      enabled: true
+      exclude:
+        - "src/themes/vibecoded-trash/error.html"
+      options:
+        detect_bidi: true
+        detect_zero_width: true
+        detect_control_ascii: true
+    direct-output:
+      enabled: true
+      exclude:
+        - "src/entrypoint.sh"
 
 security:
   enabled: true
