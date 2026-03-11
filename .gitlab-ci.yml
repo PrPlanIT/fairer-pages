@@ -1,29 +1,121 @@
-cache:
-  key: "${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_ID}"
-  paths:
-    - .cache/
-include:
-  - component: $CI_SERVER_FQDN/components/stagefreight/gl-docker-release@main
-    inputs:
-      gitlab_domain: "https://gitlab.prplanit.com"
-      gitlab_token: "${GITLAB_TOKEN}"
-      docker_release_path: "prplanit/$CI_PROJECT_NAME"
-      freight_docker_url_1: "cr.pcfae.com"
-      freight_docker_user_1: "${QUAY_USERNAME}"
-      freight_docker_pass_1: "${QUAY_PASSWORD}"
-      freight_docker_path_1: "prplanit/$CI_PROJECT_NAME"
-      freight_docker_registry_1: "quay"
-      freight_docker_url_2: "docker.io"
-      freight_docker_user_2: "${DOCKER_HUB_USERNAME}"
-      freight_docker_pass_2: "${DOCKER_HUB_PASSWORD}"
-      freight_docker_path_2: "prplanit/$CI_PROJECT_NAME"
-      freight_docker_registry_2: "docker"
-
-  - project: 'components/stagefreight'
-    file: '/export-dependencies.yml'
-    ref: main
-
 stages:
   - build
   - security
+  - docs
   - release
+
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+  rules:
+    - if: '$CI_COMMIT_MESSAGE =~ /\[skip ci\]/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+
+build-image:
+  stage: build
+  image: docker.jcr.pcfae.com/prplanit/stagefreight:latest-dev
+  interruptible: true
+  services:
+    - name: docker.jcr.pcfae.com/docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: "tcp://docker:2376"
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "/certs/client"
+    DOCKER_TLS_CERTDIR: "/certs"
+  artifacts:
+    paths:
+      - .stagefreight/
+    reports:
+      junit: .stagefreight/reports/lint.xml
+    expire_in: 2 hours
+  before_script:
+    - docker context create tls-context --docker "host=$DOCKER_HOST,ca=$DOCKER_CERT_PATH/ca.pem,cert=$DOCKER_CERT_PATH/cert.pem,key=$DOCKER_CERT_PATH/key.pem"
+    - docker buildx create --name stagefreight-builder --use tls-context
+  script:
+    - stagefreight docker build
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+
+security-scan:
+  stage: security
+  image: docker.jcr.pcfae.com/prplanit/stagefreight:latest-dev
+  interruptible: true
+  needs: [build-image]
+  services:
+    - name: docker.jcr.pcfae.com/docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: "tcp://docker:2376"
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "/certs/client"
+    DOCKER_TLS_CERTDIR: "/certs"
+  artifacts:
+    paths:
+      - .stagefreight/security/
+    expire_in: 1 week
+  before_script:
+    - docker context create tls-context --docker "host=$DOCKER_HOST,ca=$DOCKER_CERT_PATH/ca.pem,cert=$DOCKER_CERT_PATH/cert.pem,key=$DOCKER_CERT_PATH/key.pem"
+    - docker buildx create --name security-scanner --use tls-context
+  script:
+    - stagefreight security scan --image "$SCAN_IMAGE" --output .stagefreight/security/
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      variables:
+        SCAN_IMAGE: "docker.io/prplanit/fairer-pages:$CI_COMMIT_TAG"
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      variables:
+        SCAN_IMAGE: "docker.io/prplanit/fairer-pages:latest-dev"
+      when: on_success
+  allow_failure: true
+
+generate-docs:
+  stage: docs
+  image: docker.jcr.pcfae.com/prplanit/stagefreight:latest-dev
+  needs: [build-image]
+  variables:
+    GIT_DEPTH: 0
+    BUILD_STATUS: "passing"
+    BUILD_DATE: "$CI_COMMIT_TIMESTAMP"
+  script:
+    - stagefreight badge generate
+    - stagefreight narrator run
+    - stagefreight docker readme
+    - >
+      stagefreight commit
+      -t docs
+      -m "refresh generated docs and badges"
+      --add Readme.md
+      --add .stagefreight/badges
+      --skip-ci
+      --push
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+  allow_failure: true
+
+create-release:
+  stage: release
+  image: docker.jcr.pcfae.com/prplanit/stagefreight:latest-dev
+  variables:
+    GIT_DEPTH: 0
+  needs:
+    - build-image
+    - job: security-scan
+      optional: true
+    - job: generate-docs
+      optional: true
+  script:
+    - stagefreight release create --tag "$CI_COMMIT_TAG" --security-summary .stagefreight/security/ --registry-links
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+  allow_failure: true
