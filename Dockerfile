@@ -1,6 +1,15 @@
 # syntax=docker/dockerfile:1.7
 FROM docker.io/library/alpine:3.23.3
 
+LABEL maintainer="PrPlanIT <precisionplanit@gmail.com>" \
+    org.opencontainers.image.title="fairer-pages" \
+    org.opencontainers.image.description="Error pages as a service — 64 themes, playlists, hardened container" \
+    org.opencontainers.image.source="https://github.com/PrPlanIT/fairer-pages" \
+    org.opencontainers.image.url="https://hub.docker.com/r/prplanit/fairer-pages" \
+    org.opencontainers.image.documentation="https://github.com/PrPlanIT/fairer-pages#readme" \
+    org.opencontainers.image.licenses="AGPL-3.0-only" \
+    org.opencontainers.image.vendor="PrPlanIT"
+
 RUN apk upgrade --no-cache && \
     apk add --no-cache nginx python3 py3-yaml gettext && \
     # Create non-root user
