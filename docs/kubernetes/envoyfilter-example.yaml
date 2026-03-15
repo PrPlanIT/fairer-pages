@@ -1,43 +1,143 @@
-# Istio EnvoyFilter example for intercepting upstream errors
-# and serving Fairer Pages content in-place.
-# Apply to the workload that should show themed error pages.
-# Update the workload selector and fairer-pages service URL.
+# Istio EnvoyFilter — Lua-based error page handler for Fairer Pages
+#
+# Intercepts upstream error responses and serves themed Fairer Pages
+# content in-place via an iframe. Preserves the browser URL bar.
+#
+# IMPORTANT: This filter is designed for browser HTML document navigations
+# only. It intentionally excludes API, WebSocket, upgrade, and non-document
+# traffic to prevent breaking applications that multiplex HTML and control
+# traffic on the same origin (e.g., Home Assistant, GitLab, Nextcloud).
+#
+# Apply to the gateway workload that fronts your services.
+# Update the workload selector to match your gateway.
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: fairer-pages-error-intercept
+  name: fairer-pages-error-handler
 spec:
   workloadSelector:
     labels:
-      app: my-upstream-app
+      app: my-gateway  # ← change to your gateway labels
   configPatches:
     - applyTo: HTTP_FILTER
       match:
-        context: SIDECAR_OUTBOUND
+        context: GATEWAY
         listener:
           filterChain:
             filter:
               name: envoy.filters.network.http_connection_manager
+              subFilter:
+                name: envoy.filters.http.router
       patch:
         operation: INSERT_BEFORE
         value:
-          name: envoy.filters.http.custom_response
+          name: envoy.filters.http.lua
           typed_config:
-            "@type": type.googleapis.com/envoy.extensions.filters.http.custom_response.v3.CustomResponse
-            custom_response_matcher:
-              matcher_list:
-                matchers:
-                  - predicate:
-                      single_predicate:
-                        input:
-                          name: status_code
-                          typed_config:
-                            "@type": type.googleapis.com/envoy.type.matcher.v3.HttpResponseStatusCodeMatchInput
-                        value_match:
-                          exact: "404"
-                    on_match:
-                      action:
-                        name: redirect
-                        typed_config:
-                          "@type": type.googleapis.com/envoy.extensions.http.custom_response.redirect_policy.v3.RedirectPolicy
-                          uri: "http://fairer-pages.default.svc.cluster.local/fairer-pages/random/404.html"
+            "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+            defaultSourceCode:
+              inlineString: |
+                -- fairer-pages error handler
+                --
+                -- Policy: only transform errors for likely human HTML page navigations.
+                -- Intentionally avoids API, WebSocket, and upgrade traffic.
+                --
+                -- Intercept ONLY when ALL of these are true:
+                --   - Method is GET or HEAD (safe/idempotent)
+                --   - Path is NOT under excluded prefixes (/api/, /auth/, etc.)
+                --   - No Upgrade/WebSocket headers present
+                --   - Accept header contains text/html
+                --
+                -- Do NOT intercept when:
+                --   - Path is /api/* (apps expect raw status codes)
+                --   - Request is a WebSocket or upgrade flow
+                --   - Request method is not safe/idempotent (POST, PUT, DELETE, etc.)
+                --   - Request is clearly non-HTML or programmatic
+
+                function envoy_on_request(request_handle)
+                  local path = request_handle:headers():get(":path") or ""
+                  local method = request_handle:headers():get(":method") or ""
+
+                  -- Skip fairer-pages requests to prevent infinite redirect loops
+                  -- (the iframe src hits /fairer-pages/* which must reach the backend)
+                  if string.match(path, "^/fairer%-pages/") then
+                    request_handle:streamInfo():dynamicMetadata():set("fairer_pages", "skip", "true")
+                    return
+                  end
+
+                  -- Only intercept safe/idempotent methods
+                  if method ~= "GET" and method ~= "HEAD" then
+                    return
+                  end
+
+                  -- Never intercept API paths — apps expect raw status codes
+                  if string.match(path, "^/api/") then
+                    return
+                  end
+
+                  -- Never intercept auth paths
+                  if string.match(path, "^/auth/") then
+                    return
+                  end
+
+                  -- Never intercept WebSocket/upgrade requests
+                  local upgrade = request_handle:headers():get("upgrade") or ""
+                  if string.lower(upgrade) == "websocket" then
+                    return
+                  end
+
+                  local connection = request_handle:headers():get("connection") or ""
+                  if string.match(string.lower(connection), "upgrade") then
+                    return
+                  end
+
+                  if request_handle:headers():get("sec-websocket-key") then
+                    return
+                  end
+
+                  -- Only intercept browser HTML document requests
+                  local accept = request_handle:headers():get("accept") or ""
+                  if string.match(accept, "text/html") then
+                    request_handle:streamInfo():dynamicMetadata():set("fairer_pages", "browser", "true")
+                  end
+                end
+
+                function envoy_on_response(response_handle)
+                  local meta = response_handle:streamInfo():dynamicMetadata():get("fairer_pages")
+                  if not meta then return end
+                  if meta["skip"] == "true" then return end
+                  if meta["browser"] ~= "true" then return end
+
+                  local status = response_handle:headers():get(":status")
+                  local status_num = tonumber(status)
+
+                  -- Error codes to intercept with custom error pages
+                  -- Customize this list for your needs
+                  local error_codes = {
+                    [400] = true, [401] = true, [403] = true, [404] = true,
+                    [405] = true, [408] = true, [410] = true, [429] = true,
+                    [500] = true, [502] = true, [503] = true, [504] = true
+                  }
+
+                  if error_codes[status_num] then
+                    -- Serve error page in-place via iframe — preserves browser URL
+                    -- Update the iframe src to match your fairer-pages service URL
+                    local html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+                      .. '<title>Error ' .. status .. '</title>'
+                      .. '<style>*{margin:0;padding:0}html,body{height:100%;overflow:hidden}'
+                      .. 'iframe{width:100%;height:100%;border:none}</style></head>'
+                      .. '<body><iframe src="/fairer-pages/playlist/random/'
+                      .. status .. '.html"></iframe></body></html>'
+
+                    response_handle:headers():replace("content-type", "text/html; charset=utf-8")
+                    response_handle:headers():remove("content-encoding")
+                    response_handle:headers():replace("content-length", tostring(#html))
+                    response_handle:headers():add("cache-control", "no-cache, no-store, must-revalidate")
+                    -- x-original-status lets you debug what the backend actually returned
+                    response_handle:headers():add("x-original-status", status)
+
+                    local body = response_handle:body()
+                    if body then
+                      body:setBytes(html)
+                    end
+                  end
+                end

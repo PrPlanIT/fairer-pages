@@ -25,7 +25,34 @@ Example routing manifests for common ingress/gateway setups:
 |------|-------------|
 | [httproute-example.yaml](httproute-example.yaml) | Gateway API HTTPRoute |
 | [ingress-example.yaml](ingress-example.yaml) | Nginx Ingress |
-| [envoyfilter-example.yaml](envoyfilter-example.yaml) | Istio/Envoy error page injection |
+| [envoyfilter-example.yaml](envoyfilter-example.yaml) | Istio/Envoy error page injection (Lua filter) |
+
+## Error Page Interception Policy
+
+The EnvoyFilter uses a Lua script to intercept upstream error responses and serve themed Fairer Pages content. It is designed to be **non-invasive** — it only transforms errors for browser HTML document navigations and intentionally avoids interfering with application traffic.
+
+### Intercept when ALL of these are true
+
+- Request method is `GET` or `HEAD` (safe/idempotent)
+- Path is **not** under excluded prefixes (`/api/`, `/auth/`)
+- No `Upgrade: websocket`, `Connection: upgrade`, or `Sec-WebSocket-Key` headers
+- `Accept` header contains `text/html`
+
+### Do NOT intercept when
+
+- Path starts with `/api/` — apps expect raw status codes for REST/WebSocket endpoints
+- Path starts with `/auth/` — authentication flows must not be rewritten
+- Request is a WebSocket or HTTP upgrade flow
+- Request method is POST, PUT, DELETE, etc. (non-idempotent)
+- Request has no `Accept: text/html` (programmatic/API clients)
+
+### Why these exclusions matter
+
+Applications like Home Assistant, GitLab, and Nextcloud multiplex HTML pages and control traffic (REST API, WebSocket) on the same origin. Without these guards, the error handler replaces API responses with HTML iframes, breaking WebSocket connections, mobile apps, and programmatic clients that expect raw status codes.
+
+### Limitations
+
+Some failures occur before there is enough HTTP context to safely classify the request (e.g., TLS handshake failures, TCP resets). The filter cannot intercept those — they surface as browser-level connection errors, not HTTP error pages.
 
 ## Custom Playlists
 
