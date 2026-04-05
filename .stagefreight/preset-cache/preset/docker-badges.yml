@@ -1,0 +1,70 @@
+badges:
+  items:
+    - id: build
+      text: build
+      value: "{env:BUILD_STATUS}"
+      color: auto
+      font: monofur
+      output: ".stagefreight/badges/build.svg"
+      link: "https://gitlab.prplanit.com/{var:gitlab_group}/{var:repo}/-/pipelines"
+    - id: license
+      text: license
+      value: "AGPL-3.0-only"
+      color: "#310937"
+      font: monofur
+      output: ".stagefreight/badges/license.svg"
+      link: LICENSE
+    - id: release
+      text: release
+      value: "v{base}"
+      color: "#74ecbe"
+      font: dejavu-sans
+      font_size: 11
+      output: ".stagefreight/badges/release.svg"
+    - id: updated
+      text: updated
+      value: "{env:BUILD_DATE}"
+      color: "#236144"
+      font: dejavu-sans
+      font_size: 11
+      output: ".stagefreight/badges/updated.svg"
+    - id: pulls
+      text: pulls
+      value: "{docker.pulls}"
+      color: "#1d63ed"
+      output: ".stagefreight/badges/pulls.svg"
+      link: "https://hub.docker.com/r/{var:org}/{var:repo}"
+    - id: release-latest
+      text: latest
+      value: "v{base}"
+      color: "#74ecbe"
+      output: ".stagefreight/badges/latest.svg"
+      link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest"
+    - id: release-updated
+      text: updated
+      value: "{docker.tag.v{base}.updated}"
+      color: "#236144"
+      output: ".stagefreight/badges/release-updated.svg"
+    - id: release-size
+      text: size
+      value: "{docker.tag.v{base}.size}"
+      color: "#555"
+      output: ".stagefreight/badges/release-size.svg"
+      link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=v{base}"
+    - id: dev-latest
+      text: latest-dev
+      value: "dev-{sha:8}"
+      color: "#3b82f6"
+      output: ".stagefreight/badges/latest-dev.svg"
+      link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest-dev"
+    - id: dev-updated
+      text: updated
+      value: "{docker.tag.latest-dev.updated}"
+      color: "#236144"
+      output: ".stagefreight/badges/dev-updated.svg"
+    - id: dev-size
+      text: size
+      value: "{docker.tag.latest-dev.size}"
+      color: "#555"
+      output: ".stagefreight/badges/dev-size.svg"
+      link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest-dev"

@@ -1,0 +1,16 @@
+docs:
+  enabled: true
+  generators:
+    badges: true
+    reference_docs: false
+    narrator: true
+    docker_readme: true
+  commit:
+    enabled: true
+    type: docs
+    message: "refresh generated docs and badges"
+    add:
+      - "README.md"
+      - ".stagefreight/badges"
+    push: true
+    skip_ci: false

@@ -1,0 +1,4 @@
+release:
+  enabled: true
+  security_summary: ".stagefreight/security"
+  registry_links: true

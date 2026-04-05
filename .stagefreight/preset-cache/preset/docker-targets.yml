@@ -1,0 +1,77 @@
+targets:
+  # ── Docker Hub: stable releases ─────────────────────────────────
+  - id: dockerhub-stable
+    kind: registry
+    url: docker.io
+    provider: docker
+    path: "{var:org}/{var:repo}"
+    tags:
+      - "v{version}"
+      - "latest"
+    when: { git_tags: [stable], events: [tag] }
+    credentials: DOCKER
+
+  # ── Docker Hub: pre-releases ────────────────────────────────────
+  - id: dockerhub-prerelease
+    kind: registry
+    url: docker.io
+    provider: docker
+    path: "{var:org}/{var:repo}"
+    tags:
+      - "v{version}"
+    when: { git_tags: [prerelease], events: [tag] }
+    credentials: DOCKER
+
+  # ── Docker Hub: dev builds ──────────────────────────────────────
+  - id: dockerhub-dev
+    kind: registry
+    url: docker.io
+    provider: docker
+    path: "{var:org}/{var:repo}"
+    tags:
+      - "dev-{sha:8}"
+      - "latest-dev"
+    when: { branches: [main], events: [push] }
+    credentials: DOCKER
+    retention:
+      keep_last: 6
+      protect: ["latest-dev"]
+
+  # ── Harbor: stable releases ─────────────────────────────────────
+  - id: harbor-stable
+    kind: registry
+    url: cr.pcfae.com
+    provider: harbor
+    path: "{var:org}/{var:repo}"
+    tags:
+      - "v{version}"
+      - "latest"
+    when: { git_tags: [stable], events: [tag] }
+    credentials: HARBOR
+
+  # ── Harbor: dev builds ──────────────────────────────────────────
+  - id: harbor-dev
+    kind: registry
+    url: cr.pcfae.com
+    provider: harbor
+    path: "{var:org}/{var:repo}"
+    tags:
+      - "dev-{sha:8}"
+      - "latest-dev"
+    when: { branches: [main], events: [push] }
+    credentials: HARBOR
+
+  # ── Docker Hub: README sync ─────────────────────────────────────
+  - id: dockerhub-readme
+    kind: docker-readme
+    url: docker.io
+    path: "{var:org}/{var:repo}"
+    credentials: DOCKER
+    when: { branches: [main], events: [push, tag] }
+    file: "README.md"
+
+  # ── Primary release ─────────────────────────────────────────────
+  - id: primary-release
+    kind: release
+    aliases: ["v{version}", "latest"]
+    when: { git_tags: [stable], events: [tag] }
