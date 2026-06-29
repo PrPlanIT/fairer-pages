@@ -310,7 +310,10 @@
         if (!container) return;
         container.style.zoom = '';
         var available = document.body.clientHeight;
-        var contentHeight = container.scrollHeight;
+        // offsetHeight = the card's laid-out box (in-flow content only). scrollHeight
+        // would also count absolutely-positioned, animating decoration (shimmer
+        // ::before, badge) whose extent changes per frame -> over-shrink + flicker.
+        var contentHeight = container.offsetHeight;
         if (contentHeight > available) {
             container.style.zoom = (available / contentHeight) * 0.97;
         }
