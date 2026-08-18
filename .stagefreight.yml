@@ -1,11 +1,24 @@
+# fairer-pages — error pages as a service (distributable public product image).
+#
+# Distinct app (nginx + python3 playlist generation) — NOT derooted onto the static-site
+# base; already non-root uid 10000, :8080, ro-fs friendly. Public product → Docker Hub +
+# GHCR + Harbor, mirrored to GitHub.
+
 version: 1
 
 ci:
   image: docker.cr.pcfae.com/prplanit/stagefreight:latest-dev
 
-matchers:
+git:
   branches:
     main: "^main$"
+  tags:
+    stable:     { pattern: "^v?\\d+\\.\\d+\\.\\d+$" }
+    prerelease: { pattern: "^v?\\d+\\.\\d+\\.\\d+-.+" }
+  versioning:
+    branch_builds:
+      default: { base_from: [stable], format: "{base}-dev+{sha}" }
+    no_lineage: { mode: error }
 
 vars:
   org: prplanit
@@ -14,39 +27,26 @@ vars:
   repo: fairer-pages
   github_repo: fairer-pages
 
-versioning:
-  tag_sources:
-    - id: stable
-      pattern: "^v?\\d+\\.\\d+\\.\\d+$"
-    - id: prerelease
-      pattern: "^v?\\d+\\.\\d+\\.\\d+-.+"
-  branch_builds:
-    - id: default
-      base_from: [stable]
-      format: "{base}-dev+{sha}"
-  no_lineage:
-    mode: error
-
 builds:
-  # Multi-stage Dockerfile build — the themed error-page nginx/openresty image.
-  # Image-only project: no binary engine.
-  - id: fairer-pages
+  # Single-stage Dockerfile: hardened non-root nginx (+brotli) base image.
+  # Image-only project — no binary/docs engines.
+  fairer-pages:
     kind: docker
     platforms: [linux/amd64]
 
 forges:
-  - id: gitlab
+  gitlab:
     provider: gitlab
     url: "https://gitlab.prplanit.com"
     credentials: GITLAB
 
-  - id: github
+  github:
     provider: github
     url: "https://github.com"
     credentials: GITHUB
 
 repos:
-  - id: primary
+  primary:
     forge: gitlab
     project: "{var:gitlab_group}/{var:repo}"
     roles: [primary]
@@ -54,7 +54,7 @@ repos:
       default: main
     worktree: "."
 
-  - id: github-mirror
+  github-mirror:
     forge: github
     project: "{var:github_org}/{var:github_repo}"
     roles: [mirror, publish-origin]
@@ -63,47 +63,45 @@ repos:
       releases: true
 
 registries:
-  - id: dockerhub
+  dockerhub:
     provider: docker
     url: docker.io
     credentials: DOCKER
     default_path: "{var:org}/{var:repo}"
 
-  - id: harbor
+  harbor:
     provider: harbor
     url: cr.pcfae.com
     credentials: HARBOR
     default_path: "{var:org}/{var:repo}"
 
-  # GitHub Container Registry — second public registry alongside Docker Hub.
-  # ghcr namespace = github owner, lowercased ({var:org} == lowercased PrPlanIT).
-  - id: ghcr
+  ghcr:
     provider: ghcr
     url: ghcr.io
     credentials: GHCR
     default_path: "{var:org}/{var:repo}"
 
-targets:
-  # ── Docker Hub: stable releases ─────────────────────────────────
-  - id: dockerhub-stable
+publish:
+  # ── Stable releases → all registries ─────────────────────────────
+  stable:
     kind: registry
-    registry: dockerhub
+    registry: [dockerhub, ghcr, harbor]
     build: fairer-pages
     tags: ["v{version}", "latest"]
     when: { git_tags: [stable], events: [tag] }
 
-  # ── Docker Hub: pre-releases (alpha/beta/rc) ────────────────────
-  - id: dockerhub-prerelease
+  # ── Pre-releases (alpha/beta/rc) → Docker Hub + GHCR ─────────────
+  prerelease:
     kind: registry
-    registry: dockerhub
+    registry: [dockerhub, ghcr]
     build: fairer-pages
     tags: ["v{version}"]
     when: { git_tags: [prerelease], events: [tag] }
 
-  # ── Docker Hub: dev builds on every commit ───────────────────────
-  - id: dockerhub-dev
+  # ── Dev builds on every commit → all registries (retained/pruned) ──
+  dev:
     kind: registry
-    registry: dockerhub
+    registry: [dockerhub, ghcr, harbor]
     build: fairer-pages
     tags: ["dev-{sha:8}", "latest-dev"]
     when: { branches: [main], events: [push] }
@@ -111,71 +109,45 @@ targets:
       keep_last: 6
       protect: ["latest-dev"]
 
-  # ── GHCR: stable releases ───────────────────────────────────────
-  - id: ghcr-stable
-    kind: registry
-    registry: ghcr
-    build: fairer-pages
-    tags: ["v{version}", "latest"]
-    when: { git_tags: [stable], events: [tag] }
-
-  # ── GHCR: pre-releases (alpha/beta/rc) ──────────────────────────
-  - id: ghcr-prerelease
-    kind: registry
-    registry: ghcr
-    build: fairer-pages
-    tags: ["v{version}"]
-    when: { git_tags: [prerelease], events: [tag] }
-
-  # ── GHCR: dev builds on every commit ────────────────────────────
-  - id: ghcr-dev
-    kind: registry
-    registry: ghcr
-    build: fairer-pages
-    tags: ["dev-{sha:8}", "latest-dev"]
-    when: { branches: [main], events: [push] }
-
-  # ── Harbor: dev builds on every commit ──────────────────────────
-  - id: harbor-dev
-    kind: registry
-    registry: harbor
-    build: fairer-pages
-    tags: ["dev-{sha:8}", "latest-dev"]
-    when: { branches: [main], events: [push] }
-
-  # ── Harbor: stable releases ─────────────────────────────────────
-  - id: harbor-stable
-    kind: registry
-    registry: harbor
-    build: fairer-pages
-    tags: ["v{version}", "latest"]
-    when: { git_tags: [stable], events: [tag] }
-
-  # ── Docker Hub: README sync ──────────────────────────────────────
-  - id: dockerhub-readme
-    kind: docker-readme
-    registry: dockerhub
+  # ── Project metadata: sync identity to registries + forge repos ──
+  project-metadata:
+    kind: metadata
+    registry: [dockerhub, harbor]        # GHCR has no description API
+    repos: [primary, github-mirror]
+    readme: README.md
+    description:
+      - "Error pages as a service — 64 themes, playlists, hardened non-root container."
+      - "Error pages as a service — hardened non-root container."
+    website: https://github.com/PrPlanIT/fairer-pages
+    topics: [nginx, error-pages, themes, playlists, alpine, hardened, non-root, container]
     when: { branches: [main], events: [push, tag] }
-    file: "Readme.md"
-    description: "Error pages as a service — themed HTTP error pages, playlists, hardened container"
 
   # ── Primary release (rolling git tag aliases) ────────────────────
-  - id: primary-release
+  # Authored on GitLab; mirrored to GitHub via repos.github-mirror.sync.releases.
+  primary-release:
     kind: release
+    type: latest
+    repos: [primary]
     aliases: ["v{version}", "latest"]
     when: { git_tags: [stable], events: [tag] }
 
-  # ── GitHub release (mirror) ──────────────────────────────────────
-  - id: github-release
+  # ── Dev release channel (GitLab): rolling latest-dev + retained
+  #    immutable dev-{sha8}, pruned like the docker dev images. ─────
+  dev-release:
     kind: release
-    mirror: github-mirror
-    sync_release: true
-    when: { git_tags: [stable], events: [tag] }
+    repos: [primary]
+    tag: "dev-{sha:8}"
+    aliases: ["latest-dev"]
+    type: prerelease
+    retention:
+      keep_last: 6
+      protect: ["latest-dev"]
+    when: { branches: [main], events: [push] }
 
 build_cache:
   mode: hybrid
   external:
-    target: harbor-dev
+    registry: harbor
     path: "cache"
     fallback: "main"
   local:
@@ -192,7 +164,7 @@ dependency:
   enabled: true
   output: ".stagefreight/deps"
   scope:
-    dockerfile_env: true
+    dockerfile_env: true                 # pilots ALPINE_VERSION + NGINX_VERSION in the Dockerfile
   commit:
     enabled: true
     type: chore
@@ -205,24 +177,19 @@ lint:
   exclude:
     - "*.png"
     - "*.jpg"
-    - "*.gif"
-    - "*.svg"
     - "*.ico"
-    - "*.webp"
+    - "*.svg"
     - "*.woff"
     - "*.woff2"
     - "*.ttf"
-    - "docs/screenshots/**"
   modules:
     freshness:
       enabled: true
-      options:
-        cache_ttl: 300
-        sources:
-          docker_images: true
-          github_releases: true
-        vulnerability:
-          enabled: true
+      cache_ttl: 300
+      sources:
+        docker_images: true
+      vulnerability:
+        enabled: true
     tabs:
       enabled: true
     secrets:
@@ -233,20 +200,13 @@ lint:
       enabled: true
     unicode:
       enabled: true
-      exclude:
-        - "src/themes/vibecoded-trash/error.html"
-      options:
-        detect_bidi: true
-        detect_zero_width: true
-        detect_control_ascii: true
-    direct-output:
-      enabled: true
-      exclude:
-        - "src/entrypoint.sh"
+      detect_bidi: true
+      detect_zero_width: true
+      detect_control_ascii: true
 
 release:
   enabled: true
-  security_summary: ".stagefreight/security"
+  security_summary: true
   registry_links: true
 
 security:
@@ -256,188 +216,136 @@ security:
   release_detail: full
 
 toolchains:
-  desired:
-    trivy:
-      version: "0.69.3"
-    syft:
-      version: "1.42.3"
-    grype:
-      version: "0.110.0"
-    osv-scanner:
-      version: "2.3.5"
-    cosign:
-      version: "3.0.6"
+  trivy: "0.69.3"
+  syft: "1.42.3"
+  grype: "0.110.0"
+  osv-scanner: "2.3.5"
+  cosign: "3.0.6"
 
-narrate:
-  badges:
-    - id: build
-      text: build
-      value: "{env:BUILD_STATUS}"
-      color: auto
-      font: monofur
-      output: ".stagefreight/badges/build.svg"
-      link: "https://gitlab.prplanit.com/{var:gitlab_group}/{var:repo}/-/pipelines"
-    - id: license
-      text: license
-      value: "AGPL-3.0-only"
-      color: "#310937"
-      font: monofur
-      output: ".stagefreight/badges/license.svg"
-      link: LICENSE
-    - id: release
-      text: release
-      value: "v{base}"
-      color: "#74ecbe"
-      font: dejavu-sans
-      font_size: 11
-      output: ".stagefreight/badges/release.svg"
-      link: "https://github.com/{var:github_org}/{var:github_repo}/releases"
-    - id: updated
-      text: updated
-      value: "{env:BUILD_DATE}"
-      color: "#236144"
-      font: dejavu-sans
-      font_size: 11
-      output: ".stagefreight/badges/updated.svg"
-    - id: pulls
-      text: pulls
-      value: "{docker.pulls}"
-      color: "#1d63ed"
-      output: ".stagefreight/badges/pulls.svg"
-      link: "https://hub.docker.com/r/{var:org}/{var:repo}"
-    - id: release-latest
-      text: latest
-      value: "v{base}"
-      color: "#74ecbe"
-      output: ".stagefreight/badges/latest.svg"
-      link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest"
-    - id: dev-latest
-      text: latest-dev
-      value: "dev-{sha:8}"
-      color: "#3b82f6"
-      output: ".stagefreight/badges/latest-dev.svg"
-      link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest-dev"
-    - id: dev-updated
-      text: updated
-      value: "{docker.tag.latest-dev.updated}"
-      color: "#236144"
-      output: ".stagefreight/badges/dev-updated.svg"
-    - id: dev-size
-      text: size
-      value: "{docker.tag.latest-dev.size}"
-      color: "#555"
-      output: ".stagefreight/badges/dev-size.svg"
-      link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest-dev"
-  patches:
-    - file: "Readme.md"
-      items:
-        - id: badge.build
-          kind: badge_ref
-          ref: build
-          placement:
-            between: ["<!-- sf:badges:start -->", "<!-- sf:badges:end -->"]
-            mode: replace
-            inline: true
-        - id: badge.license
-          kind: badge_ref
-          ref: license
-          placement:
-            between: ["<!-- sf:badges:start -->", "<!-- sf:badges:end -->"]
-            mode: replace
-            inline: true
-        - id: badge.release
-          kind: badge_ref
-          ref: release
-          placement:
-            between: ["<!-- sf:badges:start -->", "<!-- sf:badges:end -->"]
-            mode: replace
-            inline: true
-        - id: badge.updated
-          kind: badge_ref
-          ref: updated
-          placement:
-            between: ["<!-- sf:badges:start -->", "<!-- sf:badges:end -->"]
-            mode: replace
-            inline: true
-        - id: shield.donate
-          kind: shield
-          placement:
-            between: ["<!-- sf:badges:start -->", "<!-- sf:badges:end -->"]
-            mode: replace
-            inline: true
-          shield: "badge/donate-FF5E5B?logo=ko-fi&logoColor=white"
-          link: "https://ko-fi.com/T6T41IT163"
-        - id: shield.sponsor
-          kind: shield
-          placement:
-            between: ["<!-- sf:badges:start -->", "<!-- sf:badges:end -->"]
-            mode: replace
-            inline: true
-          shield: "badge/sponsor-EA4AAA?logo=githubsponsors&logoColor=white"
-          link: "https://github.com/sponsors/{var:github_org}"
+# stencils: define each renderable once (id → SOURCE type × RENDER). Inline defs
+# render a badge (default) or a shield (render: shield); named producers render
+# through the matching module. Embed as {id} in a scribe body, narrate, or release.
+stencils:
+  # ── generated badges (SVG rendered from build metadata) ──
+  build:
+    label: build
+    message: "{env:BUILD_STATUS}"
+    color: auto
+    font: monofur
+    link: "https://gitlab.prplanit.com/{var:gitlab_group}/{var:repo}/-/pipelines"
+  license:
+    label: license
+    message: "{project.license}"
+    color: "#310937"
+    font: monofur
+    link: LICENSE
+  release:
+    label: release
+    message: "v{base}"
+    color: "#74ecbe"
+    font: dejavu-sans
+    font_size: 11
+    link: "https://github.com/{var:github_org}/{var:github_repo}/releases"
+  updated:
+    label: updated
+    message: "{commit.date}"
+    color: "#236144"
+    font: dejavu-sans
+    font_size: 11
+  pulls:
+    label: pulls
+    message: "{docker.pulls}"
+    color: "#1d63ed"
+    link: "https://hub.docker.com/r/{var:org}/{var:repo}"
+  release-latest:
+    label: latest
+    message: "v{base}"
+    color: "#74ecbe"
+    link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest"
+  release-updated:
+    label: updated
+    message: "{docker.tag.v{base}.updated}"
+    color: "#236144"
+  release-size:
+    label: size
+    message: "{docker.tag.v{base}.size}"
+    color: "#555"
+    link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=v{base}"
+  dev-latest:
+    label: latest-dev
+    message: "dev-{{sha}}"
+    color: "#3b82f6"
+    link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest-dev"
+  dev-updated:
+    label: updated
+    message: "{docker.tag.latest-dev.updated}"
+    color: "#236144"
+  dev-size:
+    label: size
+    message: "{docker.tag.latest-dev.size}"
+    color: "#555"
+    link: "https://hub.docker.com/r/{var:org}/{var:repo}/tags?name=latest-dev"
 
-        - id: project.github
-          kind: shield
-          placement:
-            between: ["<!-- sf:project:start -->", "<!-- sf:project:end -->"]
-            mode: replace
-            inline: true
-          shield: "badge/GitHub-source-181717?logo=github"
-          link: "https://github.com/{var:github_org}/{var:github_repo}"
-        - id: project.gitlab
-          kind: shield
-          placement:
-            between: ["<!-- sf:project:start -->", "<!-- sf:project:end -->"]
-            mode: replace
-            inline: true
-          shield: "badge/GitLab-source-FC6D26?logo=gitlab"
-          link: "https://gitlab.prplanit.com/{var:gitlab_group}/{var:repo}"
-        - id: project.last-commit
-          kind: props
-          type: github-last-commit
-          placement:
-            between: ["<!-- sf:project:start -->", "<!-- sf:project:end -->"]
-            mode: replace
-            inline: true
-          params:
-            repo: "{var:github_org}/{var:github_repo}"
-        - id: project.issues-open
-          kind: props
-          type: github-issues-open
-          placement:
-            between: ["<!-- sf:project:start -->", "<!-- sf:project:end -->"]
-            mode: replace
-            inline: true
-          params:
-            repo: "{var:github_org}/{var:github_repo}"
-        - id: project.contributors
-          kind: props
-          type: github-contributors
-          placement:
-            between: ["<!-- sf:project:start -->", "<!-- sf:project:end -->"]
-            mode: replace
-            inline: true
-          params:
-            repo: "{var:github_org}/{var:github_repo}"
+  # ── inline shields ──
+  donate:  { render: shield, message: donate,  color: "#FF5E5B", logo: ko-fi,          logo_color: white, link: "https://ko-fi.com/T6T41IT163" }
+  sponsor: { render: shield, message: sponsor, color: "#EA4AAA", logo: githubsponsors, logo_color: white, link: "https://github.com/sponsors/{var:github_org}" }
+  github:  { render: shield, label: GitHub, message: source, color: "#181717", logo: github, link: "https://github.com/{var:github_org}/{var:github_repo}" }
+  gitlab:  { render: shield, label: GitLab, message: source, color: "#FC6D26", logo: gitlab, link: "https://gitlab.prplanit.com/{var:gitlab_group}/{var:repo}" }
+  docker:  { render: shield, label: Docker, message: "{var:org}/{var:repo}", color: "#2496ED", logo: docker, logo_color: white, link: "https://hub.docker.com/r/{var:org}/{var:repo}" }
 
-        - id: image.docker
-          kind: shield
-          placement:
-            between: ["<!-- sf:image:start -->", "<!-- sf:image:end -->"]
-            mode: replace
-          shield: "badge/Docker-{var:org}%2Ffairer--pages-2496ED?logo=docker&logoColor=white"
-          link: "https://hub.docker.com/r/{var:org}/{var:repo}"
-        - id: image.pulls
-          kind: badge_ref
-          ref: pulls
-          placement:
-            between: ["<!-- sf:image:start -->", "<!-- sf:image:end -->"]
-            mode: replace
+  # ── named producers · repo resolves from repos: publish-origin (github-mirror) ──
+  last-commit:  { type: github-last-commit }
+  issues-open:  { type: github-issues-open }
+  prs-open:     { type: github-prs-open }
+  contributors: { type: github-contributors }
+
+  # ── build-contents (rendered from the build's manifest inventory) ──
+  contents-base:
+    type: contents
+    build: fairer-pages
+    section: inventories.versions
+    render: badges
+  contents-apk:
+    type: contents
+    build: fairer-pages
+    section: inventories.apk
+    render: badges
+
+scribe:
+  files:
+    readme.badges:
+      file: "README.md"
+      between: ["<!-- sf:badges:start -->", "<!-- sf:badges:end -->"]
+      inline: true
+      items: [build, license, release, updated, donate, sponsor]
+
+    readme.project:
+      file: "README.md"
+      between: ["<!-- sf:project:start -->", "<!-- sf:project:end -->"]
+      inline: true
+      items: [github, gitlab, last-commit, issues-open, prs-open, contributors]
+
+    # Multi-row (br = line break): Row 1 = docker + pulls, Row 2 = release + dev tags.
+    readme.image:
+      file: "README.md"
+      between: ["<!-- sf:image:start -->", "<!-- sf:image:end -->"]
+      items: [docker, pulls, br, release-latest, release-updated, release-size, dev-latest, dev-updated, dev-size]
+
+    readme.contents.base:
+      file: "README.md"
+      between: ["<!-- sf:contents-base:start -->", "<!-- sf:contents-base:end -->"]
+      items: [contents-base]
+
+    readme.contents.apk:
+      file: "README.md"
+      between: ["<!-- sf:contents-apk:start -->", "<!-- sf:contents-apk:end -->"]
+      items: [contents-apk]
+
   commit:
     type: docs
     message: "refresh generated docs and badges"
     add:
-      - "Readme.md"
-      - ".stagefreight/badges"
+      - "README.md"
+      - ".stagefreight/scribe"
     push: true
     skip_ci: true
