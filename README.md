@@ -14,6 +14,16 @@ A comprehensive error pages as a service workflow. Fairer Pages is open-source, 
 [![badge/Docker-prplanit%2Ffairer--pages-2496ED?logo=docker&logoColor=white](https://img.shields.io/badge/Docker-prplanit%2Ffairer--pages-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/prplanit/fairer-pages) [![pulls](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/badges/pulls.svg)](https://hub.docker.com/r/prplanit/fairer-pages)
 <!-- sf:image:end -->
 
+## Image contents
+
+Base:
+<!-- sf:contents-base:start -->
+<!-- sf:contents-base:end -->
+
+Packages:
+<!-- sf:contents-apk:start -->
+<!-- sf:contents-apk:end -->
+
 ### Features:
 
 |                                  |                                                                                                                                                                   |
