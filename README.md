@@ -20,12 +20,12 @@ A comprehensive error pages as a service workflow. Fairer Pages is open-source, 
 
 Base:
 <!-- sf:contents-base:start -->
-![alpine](https://img.shields.io/badge/alpine-3.23.5-0078D4?style=flat)
+[![alpine 3.23.5](https://img.shields.io/badge/alpine-3.23.5-0078D4?style=flat)](https://hub.docker.com/_/alpine)
 <!-- sf:contents-base:end -->
 
 Packages:
 <!-- sf:contents-apk:start -->
-![gettext](https://img.shields.io/badge/gettext-555?style=flat) ![nginx](https://img.shields.io/badge/nginx-555?style=flat) ![py3-yaml](https://img.shields.io/badge/py3--yaml-555?style=flat) ![python3](https://img.shields.io/badge/python3-555?style=flat)
+[![gettext](https://img.shields.io/badge/gettext-555?style=flat)](https://pkgs.alpinelinux.org/packages?name=gettext) [![nginx](https://img.shields.io/badge/nginx-555?style=flat)](https://pkgs.alpinelinux.org/packages?name=nginx) [![py3-yaml](https://img.shields.io/badge/py3--yaml-555?style=flat)](https://pkgs.alpinelinux.org/packages?name=py3-yaml) [![python3](https://img.shields.io/badge/python3-555?style=flat)](https://pkgs.alpinelinux.org/packages?name=python3)
 <!-- sf:contents-apk:end -->
 
 ### Features:
