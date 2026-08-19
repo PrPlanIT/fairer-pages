@@ -26,7 +26,7 @@ RUN apk upgrade --no-cache && \
 COPY src/index.html /usr/share/nginx/html/index.html
 COPY src/banner.html /usr/share/nginx/html/banner.html
 COPY src/banner-fantasy.html /usr/share/nginx/html/banner-fantasy.html
-COPY Readme.md /usr/share/nginx/html/Readme.md
+COPY README.md /usr/share/nginx/html/Readme.md
 COPY docs/ /usr/share/nginx/html/docs/
 COPY src/themes/ /usr/share/nginx/html/themes/
 COPY default-playlists.yml /usr/share/nginx/html/default-playlists.yml

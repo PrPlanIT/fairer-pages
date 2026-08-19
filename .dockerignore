@@ -6,9 +6,9 @@ docs/screenshots/
 .gitignore
 .gitlab-ci.yml
 
-# Documentation (exclude markdown except root Readme and docs guides)
+# Documentation (exclude markdown except root README and docs guides)
 *.md
-!Readme.md
+!README.md
 !docs/themes/**
 !docs/playlists/**
 !docs/docker/**
