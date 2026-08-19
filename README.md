@@ -5,23 +5,27 @@
 A comprehensive error pages as a service workflow. Fairer Pages is open-source, ships with 64 themes, and it also has the ability to serve fairer-pages as playlists. You will have fine grain control over your fairer-pages for each and every domain. The design is low-code so it is easier for you to understand and add your flare! Let us see your custom fairer-pages!!!
 
 <!-- sf:project:start -->
-[![badge/GitHub-source-181717?logo=github](https://img.shields.io/badge/GitHub-source-181717?logo=github)](https://github.com/PrPlanIT/fairer-pages) [![badge/GitLab-source-FC6D26?logo=gitlab](https://img.shields.io/badge/GitLab-source-FC6D26?logo=gitlab)](https://gitlab.prplanit.com/PrPlanIT/fairer-pages) [![Last Commit](https://img.shields.io/github/last-commit/PrPlanIT/fairer-pages)](https://github.com/PrPlanIT/fairer-pages/commits) [![Open Issues](https://img.shields.io/github/issues/PrPlanIT/fairer-pages)](https://github.com/PrPlanIT/fairer-pages/issues) [![Contributors](https://img.shields.io/github/contributors/PrPlanIT/fairer-pages)](https://github.com/PrPlanIT/fairer-pages/graphs/contributors)
+[![GitHub](https://img.shields.io/badge/GitHub-source-181717?logo=github)](https://github.com/PrPlanIT/fairer-pages) [![GitLab](https://img.shields.io/badge/GitLab-source-FC6D26?logo=gitlab)](https://gitlab.prplanit.com/PrPlanIT/fairer-pages) [![Last Commit](https://img.shields.io/github/last-commit/PrPlanIT/fairer-pages)](https://github.com/PrPlanIT/fairer-pages/commits) [![Open Issues](https://img.shields.io/github/issues/PrPlanIT/fairer-pages)](https://github.com/PrPlanIT/fairer-pages/issues) [![Open PRs](https://img.shields.io/github/issues-pr/PrPlanIT/fairer-pages)](https://github.com/PrPlanIT/fairer-pages/pulls) [![Contributors](https://img.shields.io/github/contributors/PrPlanIT/fairer-pages)](https://github.com/PrPlanIT/fairer-pages/graphs/contributors)
 <!-- sf:project:end -->
 <!-- sf:badges:start -->
-[![build](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/badges/build.svg)](https://gitlab.prplanit.com/PrPlanIT/fairer-pages/-/pipelines) [![license](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/badges/license.svg)](https://github.com/PrPlanIT/fairer-pages/blob/main/LICENSE) [![release](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/badges/release.svg)](https://github.com/PrPlanIT/fairer-pages/releases) ![updated](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/badges/updated.svg) [![badge/donate-FF5E5B?logo=ko-fi&logoColor=white](https://img.shields.io/badge/donate-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/T6T41IT163) [![badge/sponsor-EA4AAA?logo=githubsponsors&logoColor=white](https://img.shields.io/badge/sponsor-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/PrPlanIT)
+[![build](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/build.svg)](https://gitlab.prplanit.com/PrPlanIT/fairer-pages/-/pipelines) [![license](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/license.svg)](https://github.com/PrPlanIT/fairer-pages/blob/main/LICENSE) [![release](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/release.svg)](https://github.com/PrPlanIT/fairer-pages/releases) ![updated](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/updated.svg) [![donate](https://img.shields.io/badge/donate-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/T6T41IT163) [![sponsor](https://img.shields.io/badge/sponsor-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/PrPlanIT)
 <!-- sf:badges:end -->
 <!-- sf:image:start -->
-[![badge/Docker-prplanit%2Ffairer--pages-2496ED?logo=docker&logoColor=white](https://img.shields.io/badge/Docker-prplanit%2Ffairer--pages-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/prplanit/fairer-pages) [![pulls](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/badges/pulls.svg)](https://hub.docker.com/r/prplanit/fairer-pages)
+[![Docker](https://img.shields.io/badge/Docker-prplanit%2Ffairer--pages-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/prplanit/fairer-pages) [![pulls](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/pulls.svg)](https://hub.docker.com/r/prplanit/fairer-pages)
+
+[![latest](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/release-latest.svg)](https://hub.docker.com/r/prplanit/fairer-pages/tags?name=latest) ![updated](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/release-updated.svg) [![size](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/release-size.svg)](https://hub.docker.com/r/prplanit/fairer-pages/tags?name=v0.0.14) [![latest-dev](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/dev-latest.svg)](https://hub.docker.com/r/prplanit/fairer-pages/tags?name=latest-dev) ![updated](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/dev-updated.svg) [![size](https://raw.githubusercontent.com/PrPlanIT/fairer-pages/main/.stagefreight/scribe/dev-size.svg)](https://hub.docker.com/r/prplanit/fairer-pages/tags?name=latest-dev)
 <!-- sf:image:end -->
 
 ## Image contents
 
 Base:
 <!-- sf:contents-base:start -->
+![alpine](https://img.shields.io/badge/alpine-3.23.5-0078D4?style=flat)
 <!-- sf:contents-base:end -->
 
 Packages:
 <!-- sf:contents-apk:start -->
+![gettext](https://img.shields.io/badge/gettext-555?style=flat) ![nginx](https://img.shields.io/badge/nginx-555?style=flat) ![py3-yaml](https://img.shields.io/badge/py3--yaml-555?style=flat) ![python3](https://img.shields.io/badge/python3-555?style=flat)
 <!-- sf:contents-apk:end -->
 
 ### Features:
