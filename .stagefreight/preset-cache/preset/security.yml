@@ -1,5 +1,5 @@
 security:
   enabled: true
-  output: ".stagefreight/security"
+  output: .stagefreight/security
   sbom: true
   release_detail: full
