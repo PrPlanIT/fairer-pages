@@ -5,7 +5,10 @@ metadata:
   labels:
     app: fairer-pages
 spec:
-  replicas: 1
+  # Error pages for an entire estate render from here, so a single replica means every
+  # 404 across every host blanks while it restarts. Three is cheap at this footprint.
+  replicas: 3
+  revisionHistoryLimit: 5
   selector:
     matchLabels:
       app: fairer-pages
@@ -14,6 +17,8 @@ spec:
       labels:
         app: fairer-pages
     spec:
+      # Serves static pages and never calls the Kubernetes API.
+      automountServiceAccountToken: false
       containers:
         - name: fairer-pages
           image: docker.io/prplanit/fairer-pages:latest
@@ -38,6 +43,8 @@ spec:
             runAsGroup: 10000
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
             capabilities:
               drop:
                 - ALL

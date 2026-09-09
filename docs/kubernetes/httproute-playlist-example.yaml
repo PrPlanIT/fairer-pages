@@ -1,0 +1,53 @@
+# Gateway API HTTPRoute example: give a domain its own error playlist.
+#
+# The EnvoyFilter injects /fairer-pages/playlist/default/<code>.html on every host it
+# covers. Rewriting that segment here pins a playlist per domain, so the choice lives
+# with the domain instead of being hardcoded once in the filter.
+#
+# One file per domain scales better than packing hosts into numbered chunks: a new
+# hostname has exactly one obvious home, and a diff only touches the domain it concerns.
+# Gateway API caps a route at 16 hostnames, so a domain with more than that needs -0,
+# -1, ... and every chunk of the same domain must name the same playlist or its hosts
+# will disagree depending on which route matched.
+#
+# A host must be routed here for its error pages to render at all: the page the filter
+# injects is an iframe pointing back at /fairer-pages/ on that same host.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: fairer-pages-example-com-0
+spec:
+  parentRefs:
+    - name: my-gateway
+      sectionName: https
+  hostnames:
+    # 16 max per route — split into -0, -1, ... beyond that.
+    - "example.com"
+    - "*.example.com"
+    - "app.example.com"
+  rules:
+    # Pin this domain to a playlist. Remove this rule and the domain falls back to
+    # whatever the filter injected. The match prefix has to track the segment the
+    # filter names, so changing one means changing the other.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /fairer-pages/playlist/default/
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /fairer-pages/playlist/zelda/
+      backendRefs:
+        - name: fairer-pages
+          port: 80
+    # The themed pages and their assets. More specific paths above win, so this serves
+    # everything the rewrite rule does not claim.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /fairer-pages/
+      backendRefs:
+        - name: fairer-pages
+          port: 80
