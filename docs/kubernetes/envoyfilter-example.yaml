@@ -65,7 +65,8 @@ spec:
                   end
 
                   -- Only intercept safe/idempotent methods
-                  if method ~= "GET" and method ~= "HEAD" then
+                  -- GET only: the rewrite below writes a body, which HEAD must not carry.
+                  if method ~= "GET" then
                     return
                   end
 
@@ -125,7 +126,7 @@ spec:
                       .. '<title>Error ' .. status .. '</title>'
                       .. '<style>*{margin:0;padding:0}html,body{height:100%;overflow:hidden}'
                       .. 'iframe{width:100%;height:100%;border:none}</style></head>'
-                      .. '<body><iframe src="/fairer-pages/playlist/random/'
+                      .. '<body><iframe src="/fairer-pages/playlist/default/'
                       .. status .. '.html"></iframe></body></html>'
 
                     response_handle:headers():replace("content-type", "text/html; charset=utf-8")
@@ -135,7 +136,9 @@ spec:
                     -- x-original-status lets you debug what the backend actually returned
                     response_handle:headers():add("x-original-status", status)
 
-                    local body = response_handle:body()
+                    -- Force a buffer: a reply that matched no route carries no body to wrap,
+                    -- and the content-length replaced above has to describe one that is sent.
+                    local body = response_handle:body(true)
                     if body then
                       body:setBytes(html)
                     end
