@@ -91,3 +91,6 @@ stencils:
     - https://gitlab.prplanit.com/PrPlanIT/MaintenancePolicy//preset/stencils-docker.yml
 toolchains:
   preset: https://gitlab.prplanit.com/PrPlanIT/MaintenancePolicy//preset/toolchains.yml
+  want:
+    presets:
+      - https://gitlab.prplanit.com/PrPlanIT/MaintenancePolicy//preset/toolchains-scanners.yml
