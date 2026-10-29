@@ -1,0 +1,40 @@
+{
+  "lockfileVersion": 2,
+  "toolchains": [
+    {
+      "name": "cosign",
+      "resolved": "3.1.4",
+      "sha256": {
+        "linux/amd64": "424e2c97d0b45fd7a6b608a87f090f35633f4c23ece5f092d48bba11aaf4bbfa"
+      }
+    },
+    {
+      "name": "grype",
+      "resolved": "0.121.0",
+      "sha256": {
+        "linux/amd64": "64e07133d3486115de647a66581461dccf5c732748a0a3119077395565f15519"
+      }
+    },
+    {
+      "name": "osv-scanner",
+      "resolved": "2.7.0",
+      "sha256": {
+        "linux/amd64": "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b"
+      }
+    },
+    {
+      "name": "syft",
+      "resolved": "1.55.0",
+      "sha256": {
+        "linux/amd64": "bb65249542db5fedeeb4d3f9b018b75e7264dbfbbb10486f044581a92f90490d"
+      }
+    },
+    {
+      "name": "trivy",
+      "resolved": "0.76.1",
+      "sha256": {
+        "linux/amd64": "c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
+      }
+    }
+  ]
+}
