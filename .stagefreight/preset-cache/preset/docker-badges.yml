@@ -6,7 +6,7 @@ badges:
       color: auto
       font: monofur
       output: ".stagefreight/badges/build.svg"
-      link: "https://gitlab.prplanit.com/{var:gitlab_group}/{var:repo}/-/pipelines"
+      link: "https://git.optcp.com/{var:gitlab_group}/{var:repo}/-/pipelines"
     - id: license
       text: license
       value: "AGPL-3.0-only"
