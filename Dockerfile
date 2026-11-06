@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM docker.io/library/alpine:3.23.7
+FROM docker.io/library/alpine:3.23.8
 
 LABEL maintainer="PrPlanIT <precisionplanit@gmail.com>" \
     org.opencontainers.image.title="fairer-pages" \
