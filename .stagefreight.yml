@@ -45,7 +45,6 @@ metadata:
   description:
     - Error pages as a service, with 64 themes and per-domain playlists.
     - Self-hosted error-page service that serves styled HTTP error pages per domain, shipping 64 themes and playlists that rotate between them, with low-code customisation so pages can be edited without touching the stack.
-  license: AGPL-3.0
   org: PrPlanIT
   title: Fairer Pages
   topics:
