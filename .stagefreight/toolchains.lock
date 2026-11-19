@@ -10,30 +10,30 @@
     },
     {
       "name": "grype",
-      "resolved": "0.121.0",
+      "resolved": "0.121.3",
       "sha256": {
-        "linux/amd64": "64e07133d3486115de647a66581461dccf5c732748a0a3119077395565f15519"
+        "linux/amd64": "e9da18cc1429e786722e32161288103600efffd8e483c90761f90485bd1bec85"
       }
     },
     {
       "name": "osv-scanner",
-      "resolved": "2.7.0",
+      "resolved": "2.7.1",
       "sha256": {
-        "linux/amd64": "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b"
+        "linux/amd64": "fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8"
       }
     },
     {
       "name": "syft",
-      "resolved": "1.55.0",
+      "resolved": "1.57.1",
       "sha256": {
-        "linux/amd64": "bb65249542db5fedeeb4d3f9b018b75e7264dbfbbb10486f044581a92f90490d"
+        "linux/amd64": "bf52519eb57f675d47c07d43213cb6dff6449f3d6d1147ff6701ed91f44eef0c"
       }
     },
     {
       "name": "trivy",
-      "resolved": "0.76.1",
+      "resolved": "0.76.2",
       "sha256": {
-        "linux/amd64": "c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
+        "linux/amd64": "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf"
       }
     }
   ]
